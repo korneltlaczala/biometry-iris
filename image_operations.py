@@ -73,3 +73,46 @@ def plot_projection(projection, orientation):
     plt.title(f'{orientation} Projection')
     plt.grid()
     return plt
+
+def intersect(img1, img2):
+    img1_arr = np.array(img1)
+    img2_arr = np.array(img2)
+    output_arr = np.zeros(img1_arr.shape)
+
+    if len(img1_arr.shape) == 3 or len(img2_arr.shape) == 3:
+        raise ValueError('Both images must be grayscale')
+    if img1_arr.shape != img2_arr.shape:
+        raise ValueError('Both images must be the same size')
+    
+    # output_arr = min(img1_arr, img2_arr)
+    for i in range(img1_arr.shape[0]):
+        for j in range(img1_arr.shape[1]):
+            output_arr[i, j] = min(img1_arr[i, j], img2_arr[i, j])
+        
+    output_img = Image.fromarray(output_arr)
+    return output_img
+
+def apply_mask(img, mask):
+    img_arr = np.array(img)
+    mask_arr = np.array(mask)
+
+    if len(mask_arr.shape) == 2 and len(img_arr.shape) == 3:
+        mask_arr = np.expand_dims(mask_arr, axis=-1)
+        mask_arr = np.repeat(mask_arr, img_arr.shape[2], axis=-1)
+
+    # output_arr = np.zeros(img_arr.shape)
+    # h = img_arr.shape[0]
+    # w = img_arr.shape[1]
+    # channel_count = img_arr.shape[2] if len(img_arr.shape) == 3 else 1
+    # for i in range(h):
+    #     for j in range(w):
+    #         output_arr[i][j] = img_arr[i][j] * mask_arr[i][j] / 255
+
+
+    output_arr = (img_arr * mask_arr / 255).astype(np.uint8)
+    output_img = Image.fromarray(output_arr.astype(np.uint8))
+    return output_img
+
+def get_mean_brightness(img):
+    img_arr = np.array(img)
+    return np.mean(img_arr)

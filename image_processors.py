@@ -237,10 +237,11 @@ class GammaProcessor(Processor):
 class GrayscaleProcessor(Processor):
     def __init__(self):
         super().__init__()
-        self.default_is_enabled = False
+        self.default_is_enabled = True
         self._is_enabled = self.default_is_enabled
          
     def _process(self, img_arr):
+        print("good")
         if not self._is_enabled:
             return img_arr
         if len(img_arr.shape) == 2:
@@ -276,7 +277,7 @@ class NegativeProcessor(Processor):
 
     def __init__(self):
         super().__init__()
-        self.default_is_enabled = False
+        self.default_is_enabled = True
         self._is_enabled = self.default_is_enabled
 
     def _process(self, img_arr):
@@ -317,7 +318,7 @@ class BinarizationProcessor(Processor):
 
     def __init__(self):
         super().__init__()
-        self.default_is_enabled = False
+        self.default_is_enabled = True
         self._is_enabled = self.default_is_enabled
         self.default_threshold = 128
         self._threshold = self.default_threshold
@@ -363,7 +364,7 @@ class FilterProcessor(Processor):
 
     def __init__(self):
         super().__init__()
-        self.default_is_enabled = False
+        self.default_is_enabled = True
         self._is_enabled = self.default_is_enabled
         self.default_size = 3
         self._size = self.default_size
