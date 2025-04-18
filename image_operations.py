@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -116,3 +117,43 @@ def apply_mask(img, mask):
 def get_mean_brightness(img):
     img_arr = np.array(img)
     return np.mean(img_arr)
+
+def erode(img, kernel_size=3, iterations=1):
+    img_arr = np.array(img)
+
+    if len(img_arr.shape) == 3:
+        raise ValueError('Image must be grayscale')
+
+    kernel = np.ones((kernel_size, kernel_size), np.uint8)
+    eroded = cv2.erode(img_arr, kernel, iterations=iterations)
+    return Image.fromarray(eroded)
+
+def dilate(img, kernel_size=3, iterations=1):
+    img_arr = np.array(img)
+
+    if len(img_arr.shape) == 3:
+        raise ValueError('Image must be grayscale')
+
+    kernel = np.ones((kernel_size, kernel_size), np.uint8)
+    dilated = cv2.dilate(img_arr, kernel, iterations=iterations)
+    return Image.fromarray(dilated)
+
+def open(img, kernel_size=3, iterations=1):
+    img_arr = np.array(img)
+
+    # if len(img_arr.shape) == 3:
+    #     raise ValueError('Image must be grayscale')
+
+    kernel = np.ones((kernel_size, kernel_size), np.uint8)
+    opened = cv2.morphologyEx(img_arr, cv2.MORPH_OPEN, kernel, iterations=iterations)
+    return Image.fromarray(opened)
+
+def close(img, kernel_size=3, iterations=1):
+    img_arr = np.array(img)
+
+    # if len(img_arr.shape) == 3:
+    #     raise ValueError('Image must be grayscale')
+
+    kernel = np.ones((kernel_size, kernel_size), np.uint8)
+    closed = cv2.morphologyEx(img_arr, cv2.MORPH_CLOSE, kernel, iterations=iterations)
+    return Image.fromarray(closed)

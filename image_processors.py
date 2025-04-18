@@ -241,7 +241,6 @@ class GrayscaleProcessor(Processor):
         self._is_enabled = self.default_is_enabled
          
     def _process(self, img_arr):
-        print("good")
         if not self._is_enabled:
             return img_arr
         if len(img_arr.shape) == 2:
