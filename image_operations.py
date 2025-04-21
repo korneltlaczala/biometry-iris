@@ -157,3 +157,97 @@ def close(img, kernel_size=3, iterations=1):
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
     closed = cv2.morphologyEx(img_arr, cv2.MORPH_CLOSE, kernel, iterations=iterations)
     return Image.fromarray(closed)
+
+
+def binarize(grayscale_image, threshold):
+    h, w = grayscale_image.shape[0:2]
+    mean_intensity = np.sum(grayscale_image) / (h * w)
+    binary_image = np.where(grayscale_image > mean_intensity * threshold, 255, 0).astype(np.uint8)
+    
+    return binary_image
+
+def keep_largest_contour(image):
+    inverted = cv2.bitwise_not(image)
+    contours, _ = cv2.findContours(inverted, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    print("Contours found:", len(contours))
+    
+    if contours:
+        biggest_contour = max(contours, key=cv2.contourArea)
+        result = np.ones_like(image) * 255
+        cv2.drawContours(result, [biggest_contour], -1, (0), thickness=cv2.FILLED)
+        
+        return result
+    
+    return image
+
+def clean_pupil(img):
+    image_bin = binarize(img, threshold=0.22)
+
+    # czyszczenie
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    image = cv2.erode(image_bin, kernel, iterations=2)
+    image = cv2.dilate(image, kernel, iterations=2)
+    image = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel, iterations=2)
+    image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel, iterations=2)
+    image = cv2.medianBlur(image, 5)
+    image = keep_largest_contour(image)
+
+    return image
+
+def find_pupil_radius(img):
+    # projekcja
+    binary_image = (img > 0).astype(np.uint8)
+    horizontal_proj = np.sum(binary_image, axis=1)
+    vertical_proj = np.sum(binary_image, axis=0)
+
+    # środek
+    x = int(np.mean(np.where(vertical_proj == np.min(vertical_proj))[0]))
+    y = int(np.mean(np.where(horizontal_proj == np.min(horizontal_proj))[0]))
+
+    # promień
+    left_edge = np.min(np.where(vertical_proj < max(vertical_proj)))
+    right_edge = np.max(np.where(vertical_proj < max(vertical_proj)))
+    radius_horizontal = (right_edge - left_edge) // 2
+
+    top_edge = np.min(np.where(horizontal_proj < max(horizontal_proj)))
+    bottom_edge = np.max(np.where(horizontal_proj < max(horizontal_proj)))
+    radius_vertical = (bottom_edge - top_edge) // 2
+
+    radius_pupil = (radius_horizontal + radius_vertical) // 2
+
+    return int(x), int(y), int(radius_pupil)
+
+
+def plot_pupil_radius(img, mask):
+    x, y, radius = find_pupil_radius(mask)
+    # draw a circle on the image
+    image_center = cv2.cvtColor(img.copy(), cv2.COLOR_GRAY2BGR)
+    image_center = cv2.circle(image_center, (x, y), radius, (255, 0, 0), 1)
+    image_center = cv2.circle(image_center, (x, y), 0, (255, 0, 0), 5)
+    return Image.fromarray(image_center)
+
+def clean_iris(img, pupil_mask):
+    x, y, r_pupil = find_pupil_radius(pupil_mask)
+    mask_pupil = np.zeros_like(img)
+    cv2.circle(mask_pupil, (x, y), r_pupil, 255, thickness=-1)
+
+
+    mask_outer = np.ones_like(img) * 255
+    cv2.circle(mask_outer, (x, y), r_pupil, 0, thickness=-1)  
+
+    outer_region = cv2.bitwise_and(img, img, mask=mask_outer)    
+    mean_brightness = np.mean(outer_region[mask_outer > 0])
+
+    threshold = mean_brightness / 255 *1.25
+
+    image_bin = binarize(img, threshold=threshold)
+
+    small_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    big_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    image = cv2.dilate(image_bin, big_kernel, iterations=12)
+    image = cv2.erode(image, small_kernel, iterations=5)
+    image = keep_largest_contour(image)
+    image = cv2.erode(image, big_kernel, iterations=2)
+
+    return image
+
