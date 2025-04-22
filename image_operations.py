@@ -237,7 +237,7 @@ def binarize_iris(x, y, r, img):
     outer_region = cv2.bitwise_and(img, img, mask=mask_outer)    
     mean_brightness = np.mean(outer_region[mask_outer > 0])
 
-    threshold = mean_brightness / 255 *1.15
+    threshold = mean_brightness / 255 *0.97
 
     image_bin = binarize(img, threshold=threshold)
    
@@ -247,7 +247,48 @@ def binarize_iris(x, y, r, img):
 def extract_iris(iris_mask, pupil_mask):
     iris_mask = cv2.bitwise_xor(iris_mask, pupil_mask)
     iris_mask = cv2.bitwise_not(iris_mask)
-    return iris_mask    
+    return iris_mask   
+
+def clean_iris(image):
+    small_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    big_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    image = cv2.dilate(image, big_kernel, iterations=1)
+
+    # image = cv2.erode(image, small_kernel, iterations=2)
+    image = cv2.morphologyEx(image, cv2.MORPH_OPEN, small_kernel, iterations=1)
+    image = keep_largest_contour(image)
+    image = cv2.medianBlur(image, 5)
+
+    return image
+
+def find_iris_radius(img):
+    # projekcja
+    binary_image = (img > 0).astype(np.uint8)
+    horizontal_proj = np.sum(binary_image, axis=1)
+    vertical_proj = np.sum(binary_image, axis=0)
+
+    # środek
+
+    # promień
+    left_edge = np.min(np.where(vertical_proj < max(vertical_proj)))
+    right_edge = np.max(np.where(vertical_proj < max(vertical_proj)))
+    radius_horizontal = (right_edge - left_edge) // 2
+
+    top_edge = np.min(np.where(horizontal_proj < max(horizontal_proj)))
+    bottom_edge = np.max(np.where(horizontal_proj < max(horizontal_proj)))
+    radius_vertical = (bottom_edge - top_edge) // 2
+
+    radius_iris = (radius_horizontal + radius_vertical) // 2
+
+    return int(radius_iris)
+
+def plot_iris_radius(img, mask, x, y):
+    radius = find_iris_radius(mask)
+    # draw a circle on the image
+    image_center = cv2.cvtColor(img.copy(), cv2.COLOR_GRAY2BGR)
+    image_center = cv2.circle(image_center, (x, y), radius, (255, 0, 0), 1)
+    image_center = cv2.circle(image_center, (x, y), 0, (255, 0, 0), 5)
+    return Image.fromarray(image_center)
 
 
 

@@ -29,9 +29,11 @@ class IrisExtractor:
     
         self.x, self.y, self.r = find_pupil_radius(self.pupil_cleaned)
         self.iris = binarize_iris(self.x, self.y, self.r, self.grayscale_img)
-        self.iris_s = extract_iris(self.iris, self.pupil_cleaned)
+        self.iris_with_pupil = clean_iris(self.iris)
+        self.iris_segmented = extract_iris(self.iris_with_pupil, self.pupil_cleaned)
+        self.iris_circle = plot_iris_radius(self.grayscale_img, self.iris_with_pupil, self.x, self.y)
         
-
+    
 
 
 
@@ -72,7 +74,9 @@ class IrisExtractor:
             self.pupil_cleaned,
             self.pupil_circle,
             self.iris,
-            self.iris_s
+            self.iris_with_pupil,
+            self.iris_segmented,
+            self.iris_circle
            
             
         ]
@@ -82,12 +86,14 @@ class IrisExtractor:
             "Pupil Cleaned",
             "Pupil Circle",
             "Iris ",
-            "Iris Segmented"
+            "Iris with Pupil",
+            "Iris Cleaned",
+            "Iris Circle",
            
         ]
 
         # self.plot_images(images, descriptions, rows=2)
-        self.plot_images(images, descriptions, rows=1)
+        self.plot_images(images, descriptions, rows=2)
 
 
     def plot_images(self, images, descriptions, rows=2):
