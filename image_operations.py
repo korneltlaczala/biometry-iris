@@ -226,28 +226,29 @@ def plot_pupil_radius(img, mask):
     image_center = cv2.circle(image_center, (x, y), 0, (255, 0, 0), 5)
     return Image.fromarray(image_center)
 
-def clean_iris(img, pupil_mask):
-    x, y, r_pupil = find_pupil_radius(pupil_mask)
+def binarize_iris(x, y, r, img):
     mask_pupil = np.zeros_like(img)
-    cv2.circle(mask_pupil, (x, y), r_pupil, 255, thickness=-1)
-
+    cv2.circle(mask_pupil, (x, y), r, 255, thickness=-1)
+    
 
     mask_outer = np.ones_like(img) * 255
-    cv2.circle(mask_outer, (x, y), r_pupil, 0, thickness=-1)  
+    cv2.circle(mask_outer, (x, y), r, 0, thickness=-1)  
 
     outer_region = cv2.bitwise_and(img, img, mask=mask_outer)    
     mean_brightness = np.mean(outer_region[mask_outer > 0])
 
-    threshold = mean_brightness / 255 *1.25
+    threshold = mean_brightness / 255 *1.15
 
     image_bin = binarize(img, threshold=threshold)
+   
+    
+    return image_bin
 
-    small_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    big_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    image = cv2.dilate(image_bin, big_kernel, iterations=12)
-    image = cv2.erode(image, small_kernel, iterations=5)
-    image = keep_largest_contour(image)
-    image = cv2.erode(image, big_kernel, iterations=2)
+def extract_iris(iris_mask, pupil_mask):
+    iris_mask = cv2.bitwise_xor(iris_mask, pupil_mask)
+    iris_mask = cv2.bitwise_not(iris_mask)
+    return iris_mask    
 
-    return image
+
+
 

@@ -26,8 +26,10 @@ class IrisExtractor:
         self.pupil_boundary = binarize(self.grayscale_img, threshold=self.pupil_coef)
         self.pupil_cleaned = clean_pupil(self.grayscale_img)
         self.pupil_circle = plot_pupil_radius(self.grayscale_img, self.pupil_cleaned)
-        self.iris_boundary = binarize(self.grayscale_img, threshold=self.iris_coef)
-        self.iris_cleaned = clean_iris(self.grayscale_img,self.pupil_cleaned) 
+    
+        self.x, self.y, self.r = find_pupil_radius(self.pupil_cleaned)
+        self.iris = binarize_iris(self.x, self.y, self.r, self.grayscale_img)
+        self.iris_s = extract_iris(self.iris, self.pupil_cleaned)
         
 
 
@@ -69,8 +71,8 @@ class IrisExtractor:
             self.pupil_boundary,
             self.pupil_cleaned,
             self.pupil_circle,
-            self.iris_boundary,
-            self.iris_cleaned
+            self.iris,
+            self.iris_s
            
             
         ]
@@ -79,8 +81,8 @@ class IrisExtractor:
             "Pupil Boundary",
             "Pupil Cleaned",
             "Pupil Circle",
-            "Iris Boundary",
-            "Iris Cleaned"
+            "Iris ",
+            "Iris Segmented"
            
         ]
 
