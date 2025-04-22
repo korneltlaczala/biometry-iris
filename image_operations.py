@@ -1,3 +1,4 @@
+import math
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -255,7 +256,7 @@ def clean_iris(image):
     image = cv2.dilate(image, big_kernel, iterations=1)
 
     # image = cv2.erode(image, small_kernel, iterations=2)
-    image = cv2.morphologyEx(image, cv2.MORPH_OPEN, small_kernel, iterations=1)
+    image = cv2.morphologyEx(image, cv2.MORPH_OPEN, small_kernel, iterations=2)
     image = keep_largest_contour(image)
     image = cv2.medianBlur(image, 5)
 
@@ -288,8 +289,27 @@ def plot_iris_radius(img, mask, x, y):
     image_center = cv2.cvtColor(img.copy(), cv2.COLOR_GRAY2BGR)
     image_center = cv2.circle(image_center, (x, y), radius, (255, 0, 0), 1)
     image_center = cv2.circle(image_center, (x, y), 0, (255, 0, 0), 5)
-    return Image.fromarray(image_center)
+    return Image.fromarray(image_center), radius
 
+def unwrap_iris(img, x, y, r_pupil, r_iris, output_height=64, output_width=360):
+    unwrapped_image = np.zeros((output_height, output_width, img.shape[2] if len(img.shape) == 3 else 1), dtype=img.dtype)
+    radius_difference = r_iris - r_pupil
+
+    for v in range(output_height):
+        for u in range(output_width):
+            # Map rectangular coordinates to polar coordinates
+            radius = r_pupil + (v / output_height) * radius_difference
+            angle = (u / output_width) * 2 * math.pi
+
+            # Convert polar coordinates to Cartesian coordinates
+            original_x = int(x + radius * math.cos(angle))
+            original_y = int(y + radius * math.sin(angle))
+
+            # Get the pixel value from the original image (check bounds)
+            if 0 <= original_y < img.shape[0] and 0 <= original_x < img.shape[1]:
+                unwrapped_image[v, u] = img[original_y, original_x]
+
+    return unwrapped_image
 
 
 
