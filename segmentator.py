@@ -33,8 +33,8 @@ class IrisExtractor:
         self.iris_segmented = extract_iris(self.iris_with_pupil, self.pupil_cleaned)
         self.iris_circle, self.iris_r = plot_iris_radius(self.grayscale_img, self.iris_with_pupil, self.x, self.y)
         self.unwrapped_iris = unwrap_iris(self.grayscale_img, self.x, self.y, self.r, self.iris_r)
-        
-    
+        self.iris_with_rings = draw_iris_rings(self.grayscale_img, self.x, self.y, self.r, self.iris_r)
+
 
 
 
@@ -78,6 +78,7 @@ class IrisExtractor:
             self.iris_with_pupil,
             self.iris_segmented,
             self.iris_circle,
+            self.iris_with_rings,
             self.unwrapped_iris
            
             
@@ -91,12 +92,13 @@ class IrisExtractor:
             "Iris with Pupil",
             "Iris Cleaned",
             "Iris Circle",
+            "Iris with Rings",
             "Unwrapped Iris"
            
         ]
 
         # self.plot_images(images, descriptions, rows=2)
-        self.plot_images(images, descriptions, rows=3)
+        self.plot_images(images, descriptions, rows=2)
 
 
     def plot_images(self, images, descriptions, rows=2):

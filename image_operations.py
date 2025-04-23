@@ -268,8 +268,7 @@ def find_iris_radius(img):
     horizontal_proj = np.sum(binary_image, axis=1)
     vertical_proj = np.sum(binary_image, axis=0)
 
-    # środek
-
+    
     # promień
     left_edge = np.min(np.where(vertical_proj < max(vertical_proj)))
     right_edge = np.max(np.where(vertical_proj < max(vertical_proj)))
@@ -291,25 +290,74 @@ def plot_iris_radius(img, mask, x, y):
     image_center = cv2.circle(image_center, (x, y), 0, (255, 0, 0), 5)
     return Image.fromarray(image_center), radius
 
+import math
+
 def unwrap_iris(img, x, y, r_pupil, r_iris, output_height=64, output_width=360):
+    angles = [
+        [],                                # dla pasów 0–3
+        [(80, 100), (236.5, 303.5)],            # dla pasów 4–5
+        [(65, 115), (225, 315)]                     # dla pasów 6–7
+    ]
+
     unwrapped_image = np.zeros((output_height, output_width, img.shape[2] if len(img.shape) == 3 else 1), dtype=img.dtype)
     radius_difference = r_iris - r_pupil
 
     for v in range(output_height):
+        ring_index = int((v / output_height) * 8)
+        ring_index = min(ring_index, 7)
+
+        if ring_index <= 3:
+            blocked_angles = angles[0]
+        elif ring_index <= 5:
+            blocked_angles = angles[1]
+        else:
+            blocked_angles = angles[2]
+
         for u in range(output_width):
-            # Map rectangular coordinates to polar coordinates
+            angle_deg = (u / output_width) * 360
+            if any(start <= angle_deg <= end for (start, end) in blocked_angles):
+                continue
+
+            angle_rad = math.radians(angle_deg)
             radius = r_pupil + (v / output_height) * radius_difference
-            angle = (u / output_width) * 2 * math.pi
 
-            # Convert polar coordinates to Cartesian coordinates
-            original_x = int(x + radius * math.cos(angle))
-            original_y = int(y + radius * math.sin(angle))
+            original_x = int(x + radius * math.cos(angle_rad))
+            original_y = int(y + radius * math.sin(angle_rad))
 
-            # Get the pixel value from the original image (check bounds)
             if 0 <= original_y < img.shape[0] and 0 <= original_x < img.shape[1]:
                 unwrapped_image[v, u] = img[original_y, original_x]
 
-    return unwrapped_image
+    return unwrapped_image.squeeze()
+
+
+def draw_iris_rings(img, x, y, r_pupil, r_iris):
+    angles = [
+        [],                                # dla pasów 0–3
+        [(80, 100), (236.5, 303.5)],            # dla pasów 4–5
+        [(65, 115), (225, 315)]                     # dla pasów 6–7
+    ]
+  
+    marked_image = cv2.cvtColor(img.copy(), cv2.COLOR_GRAY2BGR)
+    radius_difference = r_iris - r_pupil
+
+    for i in range(8):
+        radius = r_pupil + (i / 8) * radius_difference
+        # Dobranie odpowiednich masek kątowych
+        if i <= 3:
+            blocked = angles[0]
+        elif i <= 5:
+            blocked = angles[1]
+        else:
+            blocked = angles[2]
+
+        # Rysowanie pierścienia w 5-stopniowych wycinkach
+        for start in range(0, 360, 5):
+            end = start + 5
+            is_blocked = any(b_start <= start <= b_end or b_start <= end <= b_end for (b_start, b_end) in blocked)
+            color = (255, 0, 0) if is_blocked else (0, 0, 255)  # BGR: blue = blocked, red = normal
+            cv2.ellipse(marked_image, (x, y), (int(radius), int(radius)), 0, start, end, color, 1)
+
+    return marked_image
 
 
 
